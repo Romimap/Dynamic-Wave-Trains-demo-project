@@ -65,7 +65,7 @@ void OceanFragment(FP P, float t, out float O, out float sigma, out visual_effec
 		O += H(G_l) / (c.frequency * 2.0 * PI * (EXEMPLAR_FREQUENCY * 2.0 * PI));
 		
 		// Section 9 : Geometry correlated visual effects
-		effects.sss += sss(G_l, wavelength); // Visual effects can be accumulatted ...
+		effects.sss += sss(G_l, wavelength); // Visual effects can be accumulated ...
 		if (i == 0) { // ... or set for a single wave train
 			effects.foam = foam(G_l, G_l_raw);
 		}
