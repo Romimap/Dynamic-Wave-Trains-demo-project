@@ -1,0 +1,130 @@
+[gd_scene format=3 uid="uid://cpw55bx017hyv"]
+
+[ext_resource type="Shader" uid="uid://bn2qra6w1ppk0" path="res://shaders/dynamic_wave_trains.gdshader" id="1_csr0l"]
+[ext_resource type="Texture2D" uid="uid://dtq607qjs5ni3" path="res://textures/depth_map.exr" id="2_iv58r"]
+[ext_resource type="Texture2D" uid="uid://b1uvbkbp1prxy" path="res://textures/exemplar.exr" id="3_4b16b"]
+[ext_resource type="Texture2D" uid="uid://df5w7rodiq7bw" path="res://textures/foam.jpg" id="4_p3pwr"]
+[ext_resource type="Texture2D" uid="uid://b0fwdixba7yg8" path="res://textures/profile.exr" id="5_fl2bo"]
+[ext_resource type="Texture2D" uid="uid://cqf3mwqwbre2c" path="res://textures/HDRI.exr" id="6_dbl6q"]
+
+[sub_resource type="GDScript" id="GDScript_4msxo"]
+script/source = "extends Node3D
+
+
+# Called when the node enters the scene tree for the first time.
+func _ready() -> void:
+	pass # Replace with function body.
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta: float) -> void:
+	print(Engine.get_frames_per_second())   
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4231v"]
+render_priority = 0
+shader = ExtResource("1_csr0l")
+shader_parameter/depth_map = ExtResource("2_iv58r")
+shader_parameter/orientations = PackedFloat32Array(1.5, 1.5, 1.5, 1.5, 1.5)
+shader_parameter/profiles = PackedFloat32Array(0.2, 0.15, 0.1, 0.3, 0.4)
+shader_parameter/exemplar = ExtResource("3_4b16b")
+shader_parameter/profile_map = ExtResource("5_fl2bo")
+shader_parameter/wavelengths = PackedFloat32Array(15, 8, 3, 0.7, 0.2)
+shader_parameter/sea_color = Color(0, 0.09807744, 0.15936214, 1)
+shader_parameter/sss_color = Color(0.24675831, 0.50982976, 0.4573387, 1)
+shader_parameter/footprint_scale = 1.2
+shader_parameter/foam_texture = ExtResource("4_p3pwr")
+
+[sub_resource type="BoxMesh" id="BoxMesh_csr0l"]
+size = Vector3(256, 15, 256)
+subdivide_width = 256
+subdivide_depth = 256
+
+[sub_resource type="FogMaterial" id="FogMaterial_lrc08"]
+
+[sub_resource type="Shader" id="Shader_sufyt"]
+code = "shader_type spatial;
+
+uniform sampler2D color_map : repeat_disable;
+uniform sampler2D height_map : repeat_disable;
+
+
+void vertex() {
+	float h = -texture(height_map, UV).r;
+	VERTEX.y = h + 0.5;
+}
+
+void fragment() {
+	vec2 uv = UV;
+	float dd = 0.01;
+	float h = -texture(height_map, uv).r;
+	float dhx = -texture(height_map, uv + vec2(dd, 0)).r - h;
+	float dhy = -texture(height_map, uv + vec2(0, dd)).r - h;
+
+	vec2 slope = vec2(dhx, dhy) / dd;
+	slope *= 0.1;
+	
+	vec3 n = normalize(vec3(-slope.x, 1.0, -slope.y));
+	NORMAL = (VIEW_MATRIX * vec4(n, 0)).xyz;
+	
+	vec3 color = texture(color_map, vec2(h * 0.1 + 0.5)).rgb;
+	ALBEDO = color;
+	
+	ROUGHNESS = 1.0;
+	SPECULAR = 0.01;
+}
+"
+
+[sub_resource type="Gradient" id="Gradient_wwgjm"]
+interpolation_mode = 2
+offsets = PackedFloat32Array(0, 0.08450704, 0.20321931, 0.41851106, 0.5231388)
+colors = PackedColorArray(0, 0, 0, 1, 8.4228816e-08, 0.06668275, 0.18577468, 1, 1.2032687e-07, 0.33512583, 0.38816974, 1, 0.12752637, 0.32568738, 0.17685944, 1, 0.61875045, 0.543597, 0.32719234, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_3unbb"]
+gradient = SubResource("Gradient_wwgjm")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ye0d5"]
+render_priority = 0
+next_pass = SubResource("FogMaterial_lrc08")
+shader = SubResource("Shader_sufyt")
+shader_parameter/color_map = SubResource("GradientTexture1D_3unbb")
+shader_parameter/height_map = ExtResource("2_iv58r")
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_6ofsg"]
+size = Vector2(256, 256)
+subdivide_width = 64
+subdivide_depth = 64
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_4msxo"]
+panorama = ExtResource("6_dbl6q")
+
+[sub_resource type="Sky" id="Sky_rt12g"]
+sky_material = SubResource("PanoramaSkyMaterial_4msxo")
+radiance_size = 5
+
+[sub_resource type="Environment" id="Environment_novmw"]
+background_mode = 2
+sky = SubResource("Sky_rt12g")
+tonemap_mode = 4
+tonemap_agx_contrast = 1.7
+adjustment_enabled = true
+adjustment_saturation = 1.2
+
+[node name="Node3D" type="Node3D" unique_id=120282397]
+script = SubResource("GDScript_4msxo")
+
+[node name="Ocean" type="MeshInstance3D" parent="." unique_id=1360664869]
+transform = Transform3D(0.997506, 0, 0, 0, 0.997506, 0, 0, 0, 0.997506, 0, -7, 0)
+material_override = SubResource("ShaderMaterial_4231v")
+cast_shadow = 2
+ignore_occlusion_culling = true
+mesh = SubResource("BoxMesh_csr0l")
+
+[node name="Ground" type="MeshInstance3D" parent="." unique_id=1420937041]
+transform = Transform3D(1, 2.72027e-06, 0.000830562, -8.78748e-06, 3, 0.000803316, -0.000830561, -0.000267775, 1, 0, 0, 0)
+material_override = SubResource("ShaderMaterial_ye0d5")
+extra_cull_margin = 10.0
+mesh = SubResource("PlaneMesh_6ofsg")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1821912561]
+environment = SubResource("Environment_novmw")
