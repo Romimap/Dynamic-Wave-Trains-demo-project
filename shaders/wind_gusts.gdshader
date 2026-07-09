@@ -21,7 +21,11 @@ uniform sampler2D foam_texture;
 uniform float wavelengths[WAVE_TRAINS_COUNT];
 uniform float orientations[WAVE_TRAINS_COUNT];
 uniform float profiles[WAVE_TRAINS_COUNT];
-wave_train_query[WAVE_TRAINS_COUNT] generate_queries(vec2 uv) {
+uniform sampler2D wind_strength : filter_linear, repeat_enable;
+wave_train_query[WAVE_TRAINS_COUNT] generate_queries(vec2 uv, float time) {
+	uv += 128.0;
+	uv /= 256.0;
+	
 	wave_train_query queries[WAVE_TRAINS_COUNT];
 	for (int i = 0; i < 5; i++) {
 		queries[i].wavelength = wavelengths[i];
@@ -29,10 +33,8 @@ wave_train_query[WAVE_TRAINS_COUNT] generate_queries(vec2 uv) {
 		queries[i].profile = profiles[i];
 	}
 	
-	//Reflection : The second wave train will be set such as it mimics the reflection of the first wave train, that decays with distance to a cliff.
-	queries[1].wavelength = queries[0].wavelength;
-	queries[1].orientation = -queries[0].orientation + PI;
-	queries[1].profile = queries[0].profile * clamp(uv.x * 0.01 + 0.1, 0.01, 1.0);
+	// For the last wave train, we multiply its profile with a local wind strength to mimic wind gusts
+	queries[4].profile *= texture(wind_strength, uv + vec2(time * 0.05, 0.0)).r;
 	
 	return queries;
 }
@@ -42,7 +44,7 @@ varying vec2 uv;
 void vertex() {
 	uv = (MODEL_MATRIX * vec4(VERTEX, 1)).xz;
 	FP P = footprint_make_fp(uv, vec2(1, 0), vec2(0, 1));
-	wave_train_query queries[WAVE_TRAINS_COUNT] = generate_queries(uv);
+	wave_train_query queries[WAVE_TRAINS_COUNT] = generate_queries(uv, TIME);
 	vec3 displacement;
 	OceanVertex(P, TIME, queries, displacement);
 	
@@ -67,7 +69,7 @@ void fragment() {
 	float O;
 	float sigma;
 	visual_effects effects;
-	wave_train_query queries[WAVE_TRAINS_COUNT] = generate_queries(uv);
+	wave_train_query queries[WAVE_TRAINS_COUNT] = generate_queries(uv, TIME);
 	vec2 slope;
 	OceanFragment(P, TIME, queries, O, sigma, effects, slope);
 	

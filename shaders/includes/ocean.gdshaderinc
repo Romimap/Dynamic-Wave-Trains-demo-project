@@ -34,7 +34,7 @@ float get_sigma(FP P, float frequency, float profile) {
 }
 
 
-void OceanFragment(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], out float O, out float sigma, out visual_effects effects) {
+void OceanFragment(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], out float O, out float sigma, out visual_effects effects, out vec2 slope) {
 	O = 0.0;
 	sigma = 0.0;
 	effects.sss = 0.0;
@@ -42,7 +42,8 @@ void OceanFragment(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], o
 	
 	for (int i = 0; i < queries.length(); i++) {
 		wave_train_query query = queries[i];
-		TB_grid_data tb_grid_data = TB_get_grid_data(P.uv, (0.5 / query.wavelength));
+		if (query.profile == 0.0) continue;
+		TB_grid_data tb_grid_data = TB_get_grid_data(P.uv, (1.0 / query.wavelength));
 		
 		//Section 6 and 7
 		control_fields c = sample_control_fields(P.uv, query, i, t, shallow_water);
@@ -51,9 +52,9 @@ void OceanFragment(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], o
 		control_fields c3 = sample_control_fields(tb_grid_data.u3, query, i, t, shallow_water);
 		
 		//Section 5.2, Equations (10, 11, 12, 13)
-		mat3 T1 = translate(vec2(c1.frequency * 2.0 * PI * -c1.speed * t * 0.02, 0.0)) * rotate(c1.orientation) * scale(vec2(c1.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
-		mat3 T2 = translate(vec2(c2.frequency * 2.0 * PI * -c2.speed * t * 0.02, 0.0)) * rotate(c2.orientation) * scale(vec2(c2.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
-		mat3 T3 = translate(vec2(c3.frequency * 2.0 * PI * -c3.speed * t * 0.02, 0.0)) * rotate(c3.orientation) * scale(vec2(c3.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
+		mat3 T1 = translate(vec2(c1.frequency * -c1.speed * t / EXEMPLAR_FREQUENCY, 0.0)) * rotate(c1.orientation) * scale(vec2(c1.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
+		mat3 T2 = translate(vec2(c2.frequency * -c2.speed * t / EXEMPLAR_FREQUENCY, 0.0)) * rotate(c2.orientation) * scale(vec2(c2.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
+		mat3 T3 = translate(vec2(c3.frequency * -c3.speed * t / EXEMPLAR_FREQUENCY, 0.0)) * rotate(c3.orientation) * scale(vec2(c3.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
 		
 		TB_transform_data tb_transform_data = TB_make_transform_data(c.profile, T1, T2, T3);
 		
@@ -63,7 +64,7 @@ void OceanFragment(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], o
 		vec2 G_l = normalize(G_l_raw) * tanh(length(G_l_raw));
 		
 		// Section 3 : Model
-		O += H(G_l) / (c.frequency * 2.0 * PI * (EXEMPLAR_FREQUENCY * 2.0 * PI));
+		O += H(G_l) / (c.frequency * 2.0 * PI);
 		
 		// Section 9 : Geometry correlated visual effects
 		effects.sss += sss(G_l, query.wavelength); // Visual effects can be accumulated ...
@@ -74,6 +75,15 @@ void OceanFragment(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], o
 		// Section 8.3 : BRDF (In this implementation we opted for a simple isotropic roughness)
 		sigma += get_sigma(P, c.frequency, c.profile);
 	}
+	
+	// Section 8.2 : Normal maps
+	mat2 dUV = mat2(
+		P.dx,
+		P.dy
+	);
+	dUV = inverse(transpose(dUV));
+	vec2 dO = vec2(dFdx(O), dFdy(O));	
+	slope = dUV * dO;
 }
 
 
@@ -82,7 +92,8 @@ void OceanVertex(FP P, float t, wave_train_query queries[5], out vec3 displaceme
 	
 	for (int i = 0; i < queries.length(); i++) {
 		wave_train_query query = queries[i];
-		TB_grid_data tb_grid_data = TB_get_grid_data(P.uv, (0.5 / query.wavelength));
+		if (query.profile == 0.0) continue;
+		TB_grid_data tb_grid_data = TB_get_grid_data(P.uv, (1.0 / query.wavelength));
 		
 		//Section 6 and 7
 		control_fields c = sample_control_fields(P.uv, query, i, t, shallow_water);
@@ -91,9 +102,9 @@ void OceanVertex(FP P, float t, wave_train_query queries[5], out vec3 displaceme
 		control_fields c3 = sample_control_fields(tb_grid_data.u3, query, i, t, shallow_water);
 		
 		//Section 5.2, Equations (10, 11, 12, 13)
-		mat3 T1 = translate(vec2(c1.frequency * 2.0 * PI * -c1.speed * t * 0.02, 0.0)) * rotate(c1.orientation) * scale(vec2(c1.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
-		mat3 T2 = translate(vec2(c2.frequency * 2.0 * PI * -c2.speed * t * 0.02, 0.0)) * rotate(c2.orientation) * scale(vec2(c2.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
-		mat3 T3 = translate(vec2(c3.frequency * 2.0 * PI * -c3.speed * t * 0.02, 0.0)) * rotate(c3.orientation) * scale(vec2(c3.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
+		mat3 T1 = translate(vec2(c1.frequency * -c1.speed * t / EXEMPLAR_FREQUENCY, 0.0)) * rotate(c1.orientation) * scale(vec2(c1.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
+		mat3 T2 = translate(vec2(c2.frequency * -c2.speed * t / EXEMPLAR_FREQUENCY, 0.0)) * rotate(c2.orientation) * scale(vec2(c2.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
+		mat3 T3 = translate(vec2(c3.frequency * -c3.speed * t / EXEMPLAR_FREQUENCY, 0.0)) * rotate(c3.orientation) * scale(vec2(c3.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
 		
 		TB_transform_data tb_transform_data = TB_make_transform_data(c.profile, T1, T2, T3);
 		

@@ -16,6 +16,8 @@ uniform vec3 sss_color : source_color;
 uniform float footprint_scale : hint_range(0.01, 100.0, 0.01) = 1.2;
 uniform sampler2D foam_texture;
 
+
+
 uniform float wavelengths[WAVE_TRAINS_COUNT];
 uniform float orientations[WAVE_TRAINS_COUNT];
 uniform float profiles[WAVE_TRAINS_COUNT];
@@ -45,6 +47,7 @@ void vertex() {
 	VERTEX += displacement;
 }
 
+
 void fragment() {
 	//Computes sea floor and sea surface distance to make water transparent
 	float depth = texture(depth_texture, SCREEN_UV).x;
@@ -59,27 +62,12 @@ void fragment() {
 	float sigma;
 	visual_effects effects;
 	wave_train_query queries[WAVE_TRAINS_COUNT] = generate_queries();
-	OceanFragment(P, TIME, queries, O, sigma, effects);
+	vec2 slope;
+	OceanFragment(P, TIME, queries, O, sigma, effects, slope);
 	
-	//Here we add a texture to the "foam quantity" returned by OceanFragment
-	effects.foam = clamp(texture(foam_texture, UV * 50.0).r * effects.foam * 2.0 - 0.1, 0.0, 1.0); //Foam behind the waves
-	effects.foam += max(0.0, texture(foam_texture, UV * 10.0).r - 0.55); //Static foam
-	
-	if ((INV_VIEW_MATRIX * vec4(NORMAL, 0)).y > 0.5) { // Am i a surface that points up ?
-		// Section 8.2 : Normal maps
-		O *= 0.2;
-		mat2 dUV = mat2(
-			dFdx(UV),
-			dFdy(UV)
-		);
-		dUV = inverse(transpose(dUV));
-		vec2 dO = vec2(dFdx(O), dFdy(O));	
-		vec2 slope = dUV * dO;
-		vec3 n = normalize(vec3(slope.x, 1.0, -slope.y));
-		NORMAL = (VIEW_MATRIX * vec4(n, 0)).xyz;
-	} else {
-		effects.foam *= 0.0;
-		effects.sss *= 0.0;
+	//Sets the normal
+	if ((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y > 0.5) {
+		NORMAL = (VIEW_MATRIX * vec4(normalize(vec3(slope.x, 1.0, -slope.y)), 0)).xyz;
 	}
 	
 	// Water BRDF params
@@ -93,6 +81,10 @@ void fragment() {
 	vec3 foam_albedo = vec3(0.8);
 	vec3 foam_emission = vec3(0.4) * effects.sss;
 	float foam_roughness = 1.0;
+	
+	//Here we add a texture to the "foam quantity" returned by OceanFragment
+	effects.foam = clamp(texture(foam_texture, UV * 50.0).r * effects.foam * 2.0 - 0.1, 0.0, 1.0); //Foam behind the waves
+	effects.foam += max(0.0, texture(foam_texture, UV * 10.0).r - 0.55); //Static foam
 	
 	// Final BRDF params
 	ALPHA = mix(water_alpha, foam_alpha, effects.foam);

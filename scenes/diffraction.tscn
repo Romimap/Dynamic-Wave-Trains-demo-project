@@ -1,0 +1,83 @@
+[gd_scene format=3 uid="uid://weydlrahn1tu"]
+
+[ext_resource type="Shader" uid="uid://cpdn7b3gkvmym" path="res://shaders/diffraction.gdshader" id="1_yg147"]
+[ext_resource type="Texture2D" uid="uid://b1uvbkbp1prxy" path="res://textures/exemplar.exr" id="2_wo7jx"]
+[ext_resource type="Texture2D" uid="uid://df5w7rodiq7bw" path="res://textures/foam.jpg" id="3_yg147"]
+[ext_resource type="Texture2D" uid="uid://burn2jflpybtd" path="res://textures/orientation_diffraction.png" id="4_7hdtl"]
+[ext_resource type="Texture2D" uid="uid://b0fwdixba7yg8" path="res://textures/profile.exr" id="4_d0am1"]
+[ext_resource type="Texture2D" uid="uid://cqf3mwqwbre2c" path="res://textures/HDRI.exr" id="5_7hdtl"]
+[ext_resource type="Texture2D" uid="uid://bmpkek84um4p2" path="res://textures/profile_diffraction.png" id="5_bued1"]
+
+[sub_resource type="GDScript" id="GDScript_4msxo"]
+script/source = "extends Node3D
+
+
+# Called when the node enters the scene tree for the first time.
+func _ready() -> void:
+	pass # Replace with function body.
+
+
+# Called every frame. 'delta' is the elapsed time since the previous frame.
+func _process(delta: float) -> void:
+	print(Engine.get_frames_per_second())   
+"
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_4231v"]
+render_priority = 0
+shader = ExtResource("1_yg147")
+shader_parameter/exemplar = ExtResource("2_wo7jx")
+shader_parameter/profile_map = ExtResource("4_d0am1")
+shader_parameter/shallow_water = false
+shader_parameter/sea_color = Color(0, 0.09807744, 0.15936214, 1)
+shader_parameter/sss_color = Color(0.24675831, 0.50982976, 0.4573387, 1)
+shader_parameter/footprint_scale = 1.2
+shader_parameter/foam_texture = ExtResource("3_yg147")
+shader_parameter/wavelengths = PackedFloat32Array(15, 8, 3, 0.7, 0.2)
+shader_parameter/orientation = ExtResource("4_7hdtl")
+shader_parameter/profile = ExtResource("5_bued1")
+
+[sub_resource type="BoxMesh" id="BoxMesh_csr0l"]
+size = Vector3(256, 40, 256)
+subdivide_width = 256
+subdivide_depth = 256
+
+[sub_resource type="BoxMesh" id="BoxMesh_novmw"]
+size = Vector3(120, 64, 16)
+
+[sub_resource type="PanoramaSkyMaterial" id="PanoramaSkyMaterial_4msxo"]
+panorama = ExtResource("5_7hdtl")
+
+[sub_resource type="Sky" id="Sky_rt12g"]
+sky_material = SubResource("PanoramaSkyMaterial_4msxo")
+radiance_size = 5
+
+[sub_resource type="Environment" id="Environment_novmw"]
+background_mode = 2
+sky = SubResource("Sky_rt12g")
+tonemap_mode = 4
+tonemap_agx_contrast = 1.7
+adjustment_enabled = true
+adjustment_saturation = 1.2
+
+[node name="Node3D" type="Node3D" unique_id=120282397]
+script = SubResource("GDScript_4msxo")
+
+[node name="Ocean" type="MeshInstance3D" parent="." unique_id=1360664869]
+transform = Transform3D(0.997506, 0, 0, 0, 0.997506, 0, 0, 0, 0.997506, 0, -18.538534, 0)
+material_override = SubResource("ShaderMaterial_4231v")
+cast_shadow = 2
+ignore_occlusion_culling = true
+mesh = SubResource("BoxMesh_csr0l")
+
+[node name="Cliff1" type="MeshInstance3D" parent="." unique_id=653405169]
+transform = Transform3D(0.99750626, 0, 0, 0, 0.99750626, 0, 0, 0, 0.99750626, -68, -6.6, 0)
+mesh = SubResource("BoxMesh_novmw")
+skeleton = NodePath("../Ocean")
+
+[node name="Cliff2" type="MeshInstance3D" parent="." unique_id=535122473]
+transform = Transform3D(0.99750626, 0, 0, 0, 0.99750626, 0, 0, 0, 0.99750626, 68, -6.6, 0)
+mesh = SubResource("BoxMesh_novmw")
+skeleton = NodePath("../Ocean")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1821912561]
+environment = SubResource("Environment_novmw")

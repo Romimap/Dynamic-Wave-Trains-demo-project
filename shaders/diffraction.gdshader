@@ -19,20 +19,18 @@ uniform sampler2D foam_texture;
 
 
 uniform float wavelengths[WAVE_TRAINS_COUNT];
-uniform float orientations[WAVE_TRAINS_COUNT];
-uniform float profiles[WAVE_TRAINS_COUNT];
+uniform sampler2D orientation : filter_linear, repeat_disable;
+uniform sampler2D profile : filter_linear, repeat_disable;
 wave_train_query[WAVE_TRAINS_COUNT] generate_queries(vec2 uv) {
+	uv += 128.0;
+	uv /= 256.0;
+	
 	wave_train_query queries[WAVE_TRAINS_COUNT];
 	for (int i = 0; i < 5; i++) {
 		queries[i].wavelength = wavelengths[i];
-		queries[i].orientation = orientations[i];
-		queries[i].profile = profiles[i];
+		queries[i].orientation = texture(orientation, uv).r * 2.0 * PI - 0.5 * PI;
+		queries[i].profile = texture(profile, uv).r;
 	}
-	
-	//Reflection : The second wave train will be set such as it mimics the reflection of the first wave train, that decays with distance to a cliff.
-	queries[1].wavelength = queries[0].wavelength;
-	queries[1].orientation = -queries[0].orientation + PI;
-	queries[1].profile = queries[0].profile * clamp(uv.x * 0.01 + 0.1, 0.01, 1.0);
 	
 	return queries;
 }
