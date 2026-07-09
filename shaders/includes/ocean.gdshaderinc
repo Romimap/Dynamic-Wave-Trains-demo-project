@@ -1,16 +1,18 @@
 #ifndef __OCEAN__
 #define __OCEAN__
 
+
+#include "control_fields.gdshaderinc"
 #include "tiling_and_blending.gdshaderinc"
-#include "shallow_water.gdshaderinc"
 #include "visual_effects.gdshaderinc"
 
 // Should be the same as the precomputation step.
 #define EXEMPLAR_FREQUENCY 10.0 
+#define WAVE_TRAINS_COUNT 5
 
 uniform sampler2D exemplar : filter_linear_mipmap_anisotropic;
 uniform sampler2D profile_map : filter_linear_mipmap_anisotropic, repeat_disable;
-uniform float wavelengths[5];
+uniform bool shallow_water = true;
 
 
 float H(vec2 G) {
@@ -32,22 +34,21 @@ float get_sigma(FP P, float frequency, float profile) {
 }
 
 
-void OceanFragment(FP P, float t, out float O, out float sigma, out visual_effects effects) {
+void OceanFragment(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], out float O, out float sigma, out visual_effects effects) {
 	O = 0.0;
 	sigma = 0.0;
 	effects.sss = 0.0;
 	effects.foam = 0.0;
 	
-	for (int i = 0; i < wavelengths.length(); i++) {
-		float wavelength = wavelengths[i];
-	
-		TB_grid_data tb_grid_data = TB_get_grid_data(P.uv, (0.5 / (wavelength)));
+	for (int i = 0; i < queries.length(); i++) {
+		wave_train_query query = queries[i];
+		TB_grid_data tb_grid_data = TB_get_grid_data(P.uv, (0.5 / query.wavelength));
 		
 		//Section 6 and 7
-		control_fields c = sample_control_fields(P.uv, wavelength, i, t);
-		control_fields c1 = sample_control_fields(tb_grid_data.u1, wavelength, i, t);
-		control_fields c2 = sample_control_fields(tb_grid_data.u2, wavelength, i, t);
-		control_fields c3 = sample_control_fields(tb_grid_data.u3, wavelength, i, t);
+		control_fields c = sample_control_fields(P.uv, query, i, t, shallow_water);
+		control_fields c1 = sample_control_fields(tb_grid_data.u1, query, i, t, shallow_water);
+		control_fields c2 = sample_control_fields(tb_grid_data.u2, query, i, t, shallow_water);
+		control_fields c3 = sample_control_fields(tb_grid_data.u3, query, i, t, shallow_water);
 		
 		//Section 5.2, Equations (10, 11, 12, 13)
 		mat3 T1 = translate(vec2(c1.frequency * 2.0 * PI * -c1.speed * t * 0.02, 0.0)) * rotate(c1.orientation) * scale(vec2(c1.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
@@ -65,7 +66,7 @@ void OceanFragment(FP P, float t, out float O, out float sigma, out visual_effec
 		O += H(G_l) / (c.frequency * 2.0 * PI * (EXEMPLAR_FREQUENCY * 2.0 * PI));
 		
 		// Section 9 : Geometry correlated visual effects
-		effects.sss += sss(G_l, wavelength); // Visual effects can be accumulated ...
+		effects.sss += sss(G_l, query.wavelength); // Visual effects can be accumulated ...
 		if (i == 0) { // ... or set for a single wave train
 			effects.foam = foam(G_l, G_l_raw);
 		}
@@ -76,19 +77,20 @@ void OceanFragment(FP P, float t, out float O, out float sigma, out visual_effec
 }
 
 
-void OceanVertex(FP P, float t, out vec3 displacement) {
+void OceanVertex(FP P, float t, wave_train_query queries[5], out vec3 displacement) {
 	displacement = vec3(0.0);
 	
-	for (int i = 0; i < wavelengths.length(); i++) {
-		float wavelength = wavelengths[i];
-	
-		TB_grid_data tb_grid_data = TB_get_grid_data(P.uv, (0.5 / (wavelength)));
+	for (int i = 0; i < queries.length(); i++) {
+		wave_train_query query = queries[i];
+		TB_grid_data tb_grid_data = TB_get_grid_data(P.uv, (0.5 / query.wavelength));
 		
-		control_fields c = sample_control_fields(P.uv, wavelength, i, t);
-		control_fields c1 = sample_control_fields(tb_grid_data.u1, wavelength, i, t);
-		control_fields c2 = sample_control_fields(tb_grid_data.u2, wavelength, i, t);
-		control_fields c3 = sample_control_fields(tb_grid_data.u3, wavelength, i, t);
+		//Section 6 and 7
+		control_fields c = sample_control_fields(P.uv, query, i, t, shallow_water);
+		control_fields c1 = sample_control_fields(tb_grid_data.u1, query, i, t, shallow_water);
+		control_fields c2 = sample_control_fields(tb_grid_data.u2, query, i, t, shallow_water);
+		control_fields c3 = sample_control_fields(tb_grid_data.u3, query, i, t, shallow_water);
 		
+		//Section 5.2, Equations (10, 11, 12, 13)
 		mat3 T1 = translate(vec2(c1.frequency * 2.0 * PI * -c1.speed * t * 0.02, 0.0)) * rotate(c1.orientation) * scale(vec2(c1.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
 		mat3 T2 = translate(vec2(c2.frequency * 2.0 * PI * -c2.speed * t * 0.02, 0.0)) * rotate(c2.orientation) * scale(vec2(c2.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
 		mat3 T3 = translate(vec2(c3.frequency * 2.0 * PI * -c3.speed * t * 0.02, 0.0)) * rotate(c3.orientation) * scale(vec2(c3.frequency)) * scale(vec2(1.0 / EXEMPLAR_FREQUENCY));
@@ -99,7 +101,7 @@ void OceanVertex(FP P, float t, out vec3 displacement) {
 		G_l = normalize(G_l) * tanh(length(G_l));
 		
 		// Appendix C : Technical details, mesh displacement
-		G_l *= (wavelengths[i] / (2.0 * PI));
+		G_l *= (query.wavelength / (2.0 * PI));
 		vec3 G_rotated = vec3(cos(c.orientation) * G_l.x, -sin(c.orientation) * G_l.x, -G_l.y);
 		G_rotated *= vec3(-1, -1, 1);
 		displacement += G_rotated;

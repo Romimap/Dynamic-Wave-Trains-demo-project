@@ -1,5 +1,7 @@
 shader_type spatial;
 
+#define SHALLOW_WATER //options : SHALLOW_WATER, DEEP_WATER
+
 render_mode depth_draw_always
 //,wireframe
 //,unshaded
@@ -14,20 +16,36 @@ uniform vec3 sss_color : source_color;
 uniform float footprint_scale : hint_range(0.01, 100.0, 0.01) = 1.2;
 uniform sampler2D foam_texture;
 
+uniform float wavelengths[WAVE_TRAINS_COUNT];
+uniform float orientations[WAVE_TRAINS_COUNT];
+uniform float profiles[WAVE_TRAINS_COUNT];
+wave_train_query[WAVE_TRAINS_COUNT] generate_queries() {
+	wave_train_query queries[WAVE_TRAINS_COUNT];
+	for (int i = 0; i < 5; i++) {
+		queries[i].wavelength = wavelengths[i];
+		queries[i].orientation = orientations[i];
+		queries[i].profile = profiles[i];
+	}
+	return queries;
+}
+
+
 varying vec2 uv;
 void vertex() {
 	uv = (MODEL_MATRIX * vec4(VERTEX, 1)).xz;
 	FP P = footprint_make_fp(uv, vec2(1, 0), vec2(0, 1));
+	wave_train_query queries[WAVE_TRAINS_COUNT] = generate_queries();
 	vec3 displacement;
-	OceanVertex(P, TIME, displacement);
+	OceanVertex(P, TIME, queries, displacement);
+	
+	if (VERTEX.y < 0.0) displacement.y *= 0.0;
+	if (VERTEX.x != clamp(VERTEX.x, -127, 127)) displacement.x *= 0.0;
+	if (VERTEX.z != clamp(VERTEX.z, -127, 127)) displacement.z *= 0.0;
 	
 	VERTEX += displacement;
 }
 
 void fragment() {
-	//Discard the water under the terrain.
-	if ((INV_VIEW_MATRIX*vec4(VERTEX, 1.0)).y < -depth(uv) * 5.0 - 0.6) discard;
-	
 	//Computes sea floor and sea surface distance to make water transparent
 	float depth = texture(depth_texture, SCREEN_UV).x;
 	vec3 ndc = vec3(SCREEN_UV * 2.0 - 1.0, depth);
@@ -40,7 +58,8 @@ void fragment() {
 	float O;
 	float sigma;
 	visual_effects effects;
-	OceanFragment(P, TIME, O, sigma, effects);
+	wave_train_query queries[WAVE_TRAINS_COUNT] = generate_queries();
+	OceanFragment(P, TIME, queries, O, sigma, effects);
 	
 	//Here we add a texture to the "foam quantity" returned by OceanFragment
 	effects.foam = clamp(texture(foam_texture, UV * 50.0).r * effects.foam * 2.0 - 0.1, 0.0, 1.0); //Foam behind the waves
@@ -58,6 +77,9 @@ void fragment() {
 		vec2 slope = dUV * dO;
 		vec3 n = normalize(vec3(slope.x, 1.0, -slope.y));
 		NORMAL = (VIEW_MATRIX * vec4(n, 0)).xyz;
+	} else {
+		effects.foam *= 0.0;
+		effects.sss *= 0.0;
 	}
 	
 	// Water BRDF params

@@ -87,7 +87,7 @@ TB_grid_data TB_get_grid_data(vec2 uv, float grid_scale) {
 	output.vert2 = ivec2(0);
 	output.vert3 = ivec2(0);
 	
-	//Makes the tiles coherent across multiple triangles, prevents a grid artifact
+	//Makes the tiles coherent across multiple triangles, prevents a grid artifact 
 	switch ((baseId.x - baseId.y + 1000000) % 3) {
 		case 0:
 			output.u1 = tb_grid_data.u1;
