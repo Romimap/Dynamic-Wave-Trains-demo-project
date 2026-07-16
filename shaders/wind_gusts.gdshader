@@ -1,97 +1,39 @@
 shader_type spatial;
 
-#define SHALLOW_WATER //options : SHALLOW_WATER, DEEP_WATER
-
-render_mode depth_draw_always
-//,wireframe
-//,unshaded
-;
-
 #include "includes/ocean.gdshaderinc"
 
-uniform sampler2D depth_texture : hint_depth_texture;
-uniform sampler2D screen_texture : hint_screen_texture;
-uniform vec3 sea_color : source_color;
-uniform vec3 sss_color : source_color;
-uniform float footprint_scale : hint_range(0.01, 100.0, 0.01) = 1.2;
-uniform sampler2D foam_texture;
-
-
-
-uniform float wavelengths[WAVE_TRAINS_COUNT];
-uniform float orientations[WAVE_TRAINS_COUNT];
-uniform float profiles[WAVE_TRAINS_COUNT];
+uniform float wavelengths[PRIMARY_WAVE_TRAINS];
+uniform float orientations[PRIMARY_WAVE_TRAINS];
+uniform float profiles[PRIMARY_WAVE_TRAINS];
 uniform sampler2D wind_strength : filter_linear, repeat_enable;
+uniform float wind_speed : hint_range(0.1, 0.8, 0.001) = 0.5;
 wave_train_query[WAVE_TRAINS_COUNT] generate_queries(vec2 uv, float time) {
+	// remaps the world uv [-128, 128] to [0, 1] for the texture fetches
 	uv += 128.0;
 	uv /= 256.0;
 	
 	wave_train_query queries[WAVE_TRAINS_COUNT];
-	for (int i = 0; i < 5; i++) {
+	
+	for (int i = 0; i < PRIMARY_WAVE_TRAINS; i++) {
 		queries[i].wavelength = wavelengths[i];
 		queries[i].orientation = orientations[i];
 		queries[i].profile = profiles[i];
 	}
 	
-	// For the last wave train, we multiply its profile with a local wind strength to mimic wind gusts
-	queries[4].profile *= texture(wind_strength, uv + vec2(time * 0.02, 0.0)).r;
+	// Inits the secondary wave trains
+	for (int i = 0; i < SECONDARY_WAVE_TRAINS; i++) {
+		queries[PRIMARY_WAVE_TRAINS + i].wavelength = 1.0;
+		queries[PRIMARY_WAVE_TRAINS + i].orientation = 0.0;
+		queries[PRIMARY_WAVE_TRAINS + i].profile = 0.0;
+	}
+	
+	// We use a secondary wave train to represent wind gusts
+	queries[PRIMARY_WAVE_TRAINS].wavelength = 0.3; // Small 30cm waves
+	queries[PRIMARY_WAVE_TRAINS].orientation = PI; // Wind direction
+	queries[PRIMARY_WAVE_TRAINS].profile = wind_speed * texture(wind_strength, uv + vec2(time * wind_speed * 0.05, 0.0)).r; // With a profile that depends on local wind strenght
 	
 	return queries;
 }
 
-
-varying vec2 uv;
-void vertex() {
-	uv = (MODEL_MATRIX * vec4(VERTEX, 1)).xz;
-	FP P = footprint_make_fp(uv, vec2(1, 0), vec2(0, 1));
-	wave_train_query queries[WAVE_TRAINS_COUNT] = generate_queries(uv, TIME);
-	vec3 displacement;
-	OceanVertex(P, TIME, queries, displacement);
-	
-	VERTEX += displacement;
-}
-
-
-void fragment() {
-	//Computes sea floor and sea surface distance to make water transparent
-	float depth = texture(depth_texture, SCREEN_UV).x;
-	vec3 ndc = vec3(SCREEN_UV * 2.0 - 1.0, depth);
-	vec4 world = INV_VIEW_MATRIX * INV_PROJECTION_MATRIX * vec4(ndc, 1.0);
-	vec3 world_position = world.xyz / world.w;
-	vec3 sea_position = (INV_VIEW_MATRIX * vec4(VERTEX, 1.0)).xyz;
-
-	//Dynamic Wave Trains
-	FP P = footprint_make_fp(uv, dFdx(uv) * footprint_scale, dFdy(uv) * footprint_scale); //A small amount of over filtering can be necessary to prevent flickering
-	float O;
-	float sigma;
-	visual_effects effects;
-	wave_train_query queries[WAVE_TRAINS_COUNT] = generate_queries(uv, TIME);
-	vec2 slope;
-	OceanFragment(P, TIME, queries, O, sigma, effects, slope);
-	
-	//Sets the normal
-	NORMAL = (VIEW_MATRIX * vec4(normalize(vec3(slope.x, 1.0, -slope.y)), 0)).xyz;
-	
-	// Water BRDF params
-	float water_alpha = clamp(1.0 - exp(-distance(world_position, sea_position) * 0.3), 0.0, 1.0);
-	vec3 water_albedo = sea_color;
-	vec3 water_emission = sss_color * effects.sss;
-	float water_roughness = 0.1 + sigma;
-	
-	// Foam BRDF params
-	float foam_alpha = 1.0;
-	vec3 foam_albedo = vec3(0.8);
-	vec3 foam_emission = vec3(0.4) * effects.sss;
-	float foam_roughness = 1.0;
-	
-	//Here we add a texture to the "foam quantity" returned by OceanFragment
-	effects.foam = clamp(texture(foam_texture, UV * 50.0).r * effects.foam * 2.0 - 0.1, 0.0, 1.0); //Foam behind the waves
-	effects.foam += max(0.0, texture(foam_texture, UV * 10.0).r - 0.55); //Static foam
-	
-	// Final BRDF params
-	ALPHA = mix(water_alpha, foam_alpha, effects.foam);
-	ALBEDO = mix(water_albedo, foam_albedo, effects.foam);
-	EMISSION = mix(water_emission, foam_emission, effects.foam);
-	ROUGHNESS = mix(water_roughness, foam_roughness, effects.foam);
-	SPECULAR = 1.0;
-}
+#define CUSTOM_QUERIES
+#include "includes/render_ocean.gdshaderinc"

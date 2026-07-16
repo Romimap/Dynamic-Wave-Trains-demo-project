@@ -26,13 +26,13 @@ shader = ExtResource("1_hnqsy")
 shader_parameter/exemplar = ExtResource("3_k31fi")
 shader_parameter/profile_map = ExtResource("5_yba84")
 shader_parameter/shallow_water = false
+shader_parameter/wavelengths = PackedFloat32Array(15, 8, 3, 0.7, 0.2)
+shader_parameter/orientations = PackedFloat32Array(0.775, 0.295, 0.485, 0.485, 0.485)
+shader_parameter/profiles = PackedFloat32Array(0.31, 0.2, 0.1, 0.3, 0.4)
 shader_parameter/sea_color = Color(0, 0.09807744, 0.15936214, 1)
 shader_parameter/sss_color = Color(0.24675831, 0.50982976, 0.4573387, 1)
 shader_parameter/footprint_scale = 1.2
 shader_parameter/foam_texture = ExtResource("4_2io5f")
-shader_parameter/wavelengths = PackedFloat32Array(15, 0, 3, 0.7, 0.2)
-shader_parameter/orientations = PackedFloat32Array(0.775, 0, 0.485, 0.485, 0.485)
-shader_parameter/profiles = PackedFloat32Array(0.31, 0, 0.1, 0.3, 0.4)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_yg147"]
 size = Vector2(256, 256)

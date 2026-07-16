@@ -8,28 +8,30 @@
 
 // Should be the same as the precomputation step.
 #define EXEMPLAR_FREQUENCY 10.0 
-#define WAVE_TRAINS_COUNT 5
+#define PRIMARY_WAVE_TRAINS 5 //Number of wave trains to represent the ocean
+#define SECONDARY_WAVE_TRAINS 3 //Number of wave trains to represent secondary effects (wind gusts, reflections, ...)
+#define WAVE_TRAINS_COUNT 8 //PRIMARY_WAVE_TRAINS + SECONDARY_WAVE_TRAINS
 
 uniform sampler2D exemplar : filter_linear_mipmap_anisotropic;
 uniform sampler2D profile_map : filter_linear_mipmap_anisotropic, repeat_disable;
 uniform bool shallow_water = true;
 
-
+// Composition between the profile map and the gaussian field, Equation 5
 float H(vec2 G) {
 	return texture(profile_map, (G * 0.5 + 0.5)).r;
 }
 
 
-const float var[4] = {
-	0.0, 0.0,
-	0.0, 0.2
+const vec3 var[4] = {
+	vec3(0), vec3(0),
+	vec3(0), vec3(0.2, 0.05, 0.0)
 };
-float get_sigma(FP P, float frequency, float profile) {
+vec3 get_sigma(FP P, float frequency, float profile) {
 	float max_p = max(length(P.dx), length(P.dy));
 	float x = clamp(max_p * frequency, 0.0, 1.0);
 	float y = clamp(profile, 0.0, 1.0);
-	float a = (var[1] - var[0]) * x + var[0];
-	float b = (var[3] - var[2]) * x + var[2];
+	vec3 a = (var[1] - var[0]) * x + var[0];
+	vec3 b = (var[3] - var[2]) * x + var[2];
 	return (b - a) * y + a;
 }
 
@@ -61,13 +63,13 @@ vec2 synthesize_gaussian_field(FP P, wave_train_query query, int wave_id, float 
 }
 
 
-void OceanFragment(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], out float O, out float sigma, out visual_effects effects, out vec2 slope) {
+void OceanFragment(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], out float O, out vec3 sigma, out visual_effects effects, out vec2 slope) {
 	O = 0.0;
-	sigma = 0.0;
+	sigma = vec3(0.0);
 	effects.sss = 0.0;
 	effects.foam = 0.0;
 	
-	// The sum of Equation 4
+	// The sum in Equation 4
 	for (int i = 0; i < queries.length(); i++) {
 		wave_train_query query = queries[i];
 		if (query.profile == 0.0) continue;
@@ -82,8 +84,8 @@ void OceanFragment(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], o
 		// Equation 5
 		O += H(G_l) / (c.frequency * 2.0 * PI);
 		
-		// Section 8.3 : BRDF (In this implementation we opted for a simple isotropic roughness)
-		sigma += get_sigma(P, c.frequency, c.profile);
+		// Equation 23 (Section 8.3 BRDF)
+		sigma += rotate_sigma(get_sigma(P, c.frequency, c.profile), c.orientation);
 		
 		// Section 9 : Geometry correlated visual effects
 		effects.sss += sss(G_l, query.wavelength); // Visual effects can be accumulated ...
@@ -92,7 +94,7 @@ void OceanFragment(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], o
 		}
 	}
 	
-	// Section 8.2 : Normal maps
+	// Equation 22 (Section 8.2 Normal maps)
 	mat2 dUV = mat2(
 		P.dx,
 		P.dy
@@ -103,10 +105,10 @@ void OceanFragment(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], o
 }
 
 
-void OceanVertex(FP P, float t, wave_train_query queries[5], out vec3 displacement) {
+void OceanVertex(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], out vec3 displacement) {
 	displacement = vec3(0.0);
 	
-	// The sum of Equation 4
+	// The sum in Equation 4
 	for (int i = 0; i < queries.length(); i++) {
 		wave_train_query query = queries[i];
 		if (query.profile == 0.0) continue;

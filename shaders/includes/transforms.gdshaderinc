@@ -1,3 +1,7 @@
+/*
+Helper functions to transform vectors
+*/
+
 #ifndef __TRANSFORMS__
 #define __TRANSFORMS__
 

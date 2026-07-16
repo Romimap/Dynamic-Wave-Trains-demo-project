@@ -1,3 +1,10 @@
+/*
+This file defines a footprint, that is a rectangular area in UV space.
+This is usually done internally in the texture calls.
+To filter the wave trains in the fragment shader, we need the UV derivatives in screen space. To filter the wave trains in the vertex shader, we need the local grid size.
+This footprint abstraction can cover both case.
+*/
+
 #ifndef __FOOTPRINT__
 #define __FOOTPRINT__
 

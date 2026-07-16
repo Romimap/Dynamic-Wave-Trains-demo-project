@@ -1,9 +1,10 @@
 [gd_scene format=3 uid="uid://c67vl58odp4ec"]
 
 [ext_resource type="Shader" uid="uid://b7ft8eurrw7ou" path="res://shaders/wind_gusts.gdshader" id="1_0kkl4"]
-[ext_resource type="Texture2D" uid="uid://b1uvbkbp1prxy" path="res://textures/exemplar.exr" id="3_qqs8h"]
-[ext_resource type="Texture2D" uid="uid://df5w7rodiq7bw" path="res://textures/foam.jpg" id="4_recye"]
-[ext_resource type="Texture2D" uid="uid://b0fwdixba7yg8" path="res://textures/profile.exr" id="5_tpjp3"]
+[ext_resource type="Texture2D" uid="uid://b1uvbkbp1prxy" path="res://textures/exemplar.exr" id="2_272ya"]
+[ext_resource type="Texture2D" uid="uid://df5w7rodiq7bw" path="res://textures/foam.jpg" id="3_ukjnt"]
+[ext_resource type="Texture2D" uid="uid://b0fwdixba7yg8" path="res://textures/profile.exr" id="4_qqs8h"]
+[ext_resource type="Texture2D" uid="uid://ci14c6pe32p71" path="res://textures/wind_strenght.tres" id="5_recye"]
 [ext_resource type="Texture2D" uid="uid://cqf3mwqwbre2c" path="res://textures/HDRI.exr" id="6_uo84f"]
 
 [sub_resource type="GDScript" id="GDScript_4msxo"]
@@ -20,35 +21,21 @@ func _process(delta: float) -> void:
 	print(Engine.get_frames_per_second())   
 "
 
-[sub_resource type="Gradient" id="Gradient_0kkl4"]
-offsets = PackedFloat32Array(0, 0.52662724, 1)
-colors = PackedColorArray(0, 0, 0, 1, 0.020710059, 0.020710059, 0.020710059, 1, 1, 1, 1, 1)
-
-[sub_resource type="FastNoiseLite" id="FastNoiseLite_ukjnt"]
-frequency = 0.033
-
-[sub_resource type="NoiseTexture2D" id="NoiseTexture2D_272ya"]
-width = 128
-height = 128
-noise = SubResource("FastNoiseLite_ukjnt")
-color_ramp = SubResource("Gradient_0kkl4")
-seamless = true
-seamless_blend_skirt = 0.454
-
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_4231v"]
 render_priority = 0
 shader = ExtResource("1_0kkl4")
-shader_parameter/exemplar = ExtResource("3_qqs8h")
-shader_parameter/profile_map = ExtResource("5_tpjp3")
+shader_parameter/exemplar = ExtResource("2_272ya")
+shader_parameter/profile_map = ExtResource("4_qqs8h")
 shader_parameter/shallow_water = false
-shader_parameter/sea_color = Color(0, 0.09807744, 0.15936214, 1)
-shader_parameter/sss_color = Color(0.24675831, 0.50982976, 0.4573387, 1)
+shader_parameter/wavelengths = PackedFloat32Array(20, 13, 7, 3, 1)
+shader_parameter/orientations = PackedFloat32Array(1.5, 1.5, 1.5, 1.5, 1.5)
+shader_parameter/profiles = PackedFloat32Array(0.01, 0.01, 0.01, 0.01, 0.01)
+shader_parameter/wind_strength = ExtResource("5_recye")
+shader_parameter/wind_speed = 0.80000001192093
+shader_parameter/sea_color = Color(0, 0, 0, 1)
+shader_parameter/sss_color = Color(0, 0, 0, 1)
 shader_parameter/footprint_scale = 1.2
-shader_parameter/foam_texture = ExtResource("4_recye")
-shader_parameter/wavelengths = PackedFloat32Array(15, 12, 8, 6, 0.7)
-shader_parameter/orientations = PackedFloat32Array(1.5, 1.5, 1.5, 1.5, 3.142)
-shader_parameter/profiles = PackedFloat32Array(0.01, 0.01, 0.01, 0.01, 0.7)
-shader_parameter/wind_strength = SubResource("NoiseTexture2D_272ya")
+shader_parameter/foam_texture = ExtResource("3_ukjnt")
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_amerp"]
 size = Vector2(256, 256)

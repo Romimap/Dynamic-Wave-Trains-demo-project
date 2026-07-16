@@ -1,3 +1,7 @@
+/*
+See [Eric Heitz, Fabrice Neyret. High-Performance By-Example Noise using a Histogram-Preserving Blending Operator. Proceedings of the ACM on Computer Graphics and Interactive Techniques, 2018, ACM SIGGRAPH]
+*/
+
 #ifndef __TILING_AND_BLENDING__
 #define __TILING_AND_BLENDING__
 
@@ -144,24 +148,19 @@ vec4 TB_tiling_and_blending(FP P, sampler2D tex, TB_grid_data tb_grid_data, TB_t
 	P1.uv += h1;
 	P2.uv += h2;
 	P3.uv += h3;
-
+	
 	vec4 mean = textureLod(tex, vec2(0.5), 100);
 	vec4 E1 = textureGrad(tex, P1.uv, P1.dx, P1.dy) - mean;
 	vec4 E2 = textureGrad(tex, P2.uv, P2.dx, P2.dy) - mean;
 	vec4 E3 = textureGrad(tex, P3.uv, P3.dx, P3.dy) - mean;
 	
-	//Hack
-	tb_grid_data.v1 = pow(tb_grid_data.v1, 2.);
-	tb_grid_data.v2 = pow(tb_grid_data.v2, 2.);
-	tb_grid_data.v3 = pow(tb_grid_data.v3, 2.);
-
 	float sum = sqrt(tb_grid_data.v1 * tb_grid_data.v1 + tb_grid_data.v2 * tb_grid_data.v2 + tb_grid_data.v3 * tb_grid_data.v3);
-
+	
 	float w1 = tb_grid_data.v1 / sum;
 	float w2 = tb_grid_data.v2 / sum;
 	float w3 = tb_grid_data.v3 / sum;
 	
-
+	
 	return tb_transform_data.intensity * (w1 * E1 + w2 * E2 + w3 * E3 + mean);
 }
 
