@@ -47,7 +47,7 @@ shader_parameter/footprint_scale = 1.2
 shader_parameter/foam_texture = ExtResource("4_recye")
 shader_parameter/wavelengths = PackedFloat32Array(15, 12, 8, 6, 0.7)
 shader_parameter/orientations = PackedFloat32Array(1.5, 1.5, 1.5, 1.5, 3.142)
-shader_parameter/profiles = PackedFloat32Array(0.2, 0.1, 0.1, 0.1, 0.5)
+shader_parameter/profiles = PackedFloat32Array(0.01, 0.01, 0.01, 0.01, 0.7)
 shader_parameter/wind_strength = SubResource("NoiseTexture2D_272ya")
 
 [sub_resource type="BoxMesh" id="BoxMesh_csr0l"]

@@ -1,6 +1,5 @@
 shader_type spatial;
 
-#define SHALLOW_WATER //options : SHALLOW_WATER, DEEP_WATER
 
 render_mode depth_draw_always
 //,wireframe

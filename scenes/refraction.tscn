@@ -111,9 +111,6 @@ tonemap_agx_contrast = 1.7
 adjustment_enabled = true
 adjustment_saturation = 1.2
 
-[sub_resource type="BoxMesh" id="BoxMesh_e3vnt"]
-size = Vector3(15, 15, 15)
-
 [node name="Node3D" type="Node3D" unique_id=120282397]
 script = SubResource("GDScript_4msxo")
 
@@ -132,7 +129,3 @@ mesh = SubResource("PlaneMesh_6ofsg")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1821912561]
 environment = SubResource("Environment_novmw")
-
-[node name="MeshInstance3D" type="MeshInstance3D" parent="." unique_id=6643228]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -4.7697363, 0)
-mesh = SubResource("BoxMesh_e3vnt")

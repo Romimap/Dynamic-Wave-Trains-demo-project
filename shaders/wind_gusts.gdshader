@@ -34,7 +34,7 @@ wave_train_query[WAVE_TRAINS_COUNT] generate_queries(vec2 uv, float time) {
 	}
 	
 	// For the last wave train, we multiply its profile with a local wind strength to mimic wind gusts
-	queries[4].profile *= texture(wind_strength, uv + vec2(time * 0.05, 0.0)).r;
+	queries[4].profile *= texture(wind_strength, uv + vec2(time * 0.02, 0.0)).r;
 	
 	return queries;
 }

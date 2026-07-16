@@ -22,7 +22,7 @@ float H(vec2 G) {
 
 const float var[4] = {
 	0.0, 0.0,
-	0.0, 0.02
+	0.0, 0.2
 };
 float get_sigma(FP P, float frequency, float profile) {
 	float max_p = max(length(P.dx), length(P.dy));

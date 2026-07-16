@@ -35,7 +35,7 @@ float frequency_deep(float wavelength) {
 uniform sampler2D depth_map : repeat_disable;
 
 float depth(vec2 u) {
-	return max(0.01, texture(depth_map, u * (1.0 / 256.0) + 0.5).r * 0.5);
+	return texture(depth_map, u * (1.0 / 256.0) + 0.5).r * 0.5;
 }
 
 float depth_gradient(float _p, vec2 u) {
@@ -66,8 +66,8 @@ float frequency_shallow(float speed_deep, float speed, float frequency_deep) {
 }
 
 float profile_shallow(float depth, float wavelength, float profile_deep) {
-	float coast_mute = clamp(depth * 3.0, 0.0, 1.0); //Tune down the profiles close to the coast
-	return sqrt(sqrt((wavelength * 0.5)/depth)) * profile_deep * coast_mute;
+	if (depth < 0.0) return 0.0;
+	return sqrt(sqrt((wavelength * 0.5)/depth)) * profile_deep;
 }
 
 
