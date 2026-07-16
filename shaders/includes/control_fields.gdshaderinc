@@ -17,7 +17,6 @@ struct control_fields {
 };
 
 
-
 //DEEP (Section 6)
 
 float speed_deep(float wavelength) {
@@ -44,9 +43,11 @@ control_fields deep_water_control_fields(vec2 u, wave_train_query query) {
 //SHALLOW (Section 7)
 
 uniform sampler2D depth_map : repeat_disable;
-
 float depth(vec2 u) {
-	return texture(depth_map, u * (1.0 / 256.0) + 0.5).r * 0.5;
+	// remaps the world uv [-128, 128] to [0, 1] for the texture fetches
+	u += 128.0;
+	u /= 256.0;
+	return texture(depth_map, u).r * 0.5;
 }
 
 float depth_gradient(float _p, vec2 u) {
@@ -55,11 +56,12 @@ float depth_gradient(float _p, vec2 u) {
 	return atan(p_dx, p_dy);
 }
 
-float speed_shallow(float depth, float wavelength) {
-	depth = max(depth, 0.3); // Clamp so speed does not go to 0
-	return sqrt(((wavelength * g) / (2.0 * PI)) * tanh(2.0  *  PI * (depth / wavelength)));
+//Equation 16 and Appendix C : Technical details
+float speed_shallow(float depth, float wavelength, float speed_deep) {
+	return max(speed_deep * 0.1, sqrt(((wavelength * g) / (2.0 * PI)) * tanh(2.0  *  PI * (depth / wavelength))));
 }
 
+// Equation 17 and Appendix C : Technical details
 float orientation_shallow(float _orientation_deep, float _depth_gradient, float _speed_deep, float _speed) {
 	float n_2 = (_speed_deep / _speed);
 	float theta_1 = _orientation_deep - (_depth_gradient + PI * 0.5);
@@ -72,12 +74,14 @@ float orientation_shallow(float _orientation_deep, float _depth_gradient, float 
 	return _Theta_shallow;
 }
 
+// Equation 18
 float frequency_shallow(float speed_deep, float speed, float frequency_deep) {
 	return (speed_deep/speed) * frequency_deep;
 }
 
+// Equation 19
 float profile_shallow(float depth, float wavelength, float profile_deep) {
-	if (depth < 0.0) return 0.0;
+	if (depth <= 0.0) return 1e-5; //if we are under the terrain (water depth is negative), set the profile to a small value.
 	return sqrt(sqrt((wavelength * 0.5)/depth)) * profile_deep;
 }
 
@@ -87,7 +91,7 @@ control_fields shallow_water_control_fields(vec2 u, wave_train_query query, int 
 	float _depth_gradient = depth_gradient(_depth, u);
 	
 	control_fields shallow;
-	shallow.speed = speed_shallow(_depth, query.wavelength); // Equation 16
+	shallow.speed = speed_shallow(_depth, query.wavelength, deep.speed); // Equation 16
 	shallow.orientation = orientation_shallow(deep.orientation, _depth_gradient, deep.speed, shallow.speed); // Equation 17
 	shallow.frequency = frequency_shallow(deep.speed, shallow.speed, deep.frequency); // Equation 18
 	shallow.profile = profile_shallow(_depth, query.wavelength, deep.profile); // Equation 19

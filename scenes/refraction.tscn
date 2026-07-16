@@ -28,13 +28,13 @@ shader_parameter/depth_map = ExtResource("2_m1csf")
 shader_parameter/exemplar = ExtResource("3_23ije")
 shader_parameter/profile_map = ExtResource("5_3n0bs")
 shader_parameter/shallow_water = true
+shader_parameter/wavelengths = PackedFloat32Array(15, 8, 3, 0.7, 0.2)
+shader_parameter/orientations = PackedFloat32Array(1.5, 1.5, 1.5, 1.5, 1.5)
+shader_parameter/profiles = PackedFloat32Array(0.2, 0.15, 0.1, 0.3, 0.4)
 shader_parameter/sea_color = Color(0, 0.09807744, 0.15936214, 1)
 shader_parameter/sss_color = Color(0.24675831, 0.50982976, 0.4573387, 1)
 shader_parameter/footprint_scale = 1.2
 shader_parameter/foam_texture = ExtResource("4_83740")
-shader_parameter/wavelengths = PackedFloat32Array(15, 8, 3, 0.7, 0.2)
-shader_parameter/orientations = PackedFloat32Array(1.5, 1.5, 1.5, 1.5, 1.5)
-shader_parameter/profiles = PackedFloat32Array(0.2, 0.15, 0.1, 0.3, 0.4)
 
 [sub_resource type="PlaneMesh" id="PlaneMesh_dymhm"]
 size = Vector2(256, 256)
@@ -115,7 +115,7 @@ adjustment_saturation = 1.2
 script = SubResource("GDScript_4msxo")
 
 [node name="Ocean" type="MeshInstance3D" parent="." unique_id=1360664869]
-transform = Transform3D(0.997506, 0, 0, 0, 0.997506, 0, 0, 0, 0.997506, 0, 0.5864868, 0)
+transform = Transform3D(0.997506, 0, 0, 0, 0.997506, 0, 0, 0, 0.997506, 0.049453735, 0.24934387, -0.04436493)
 material_override = SubResource("ShaderMaterial_4231v")
 cast_shadow = 2
 ignore_occlusion_culling = true

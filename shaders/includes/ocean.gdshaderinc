@@ -1,7 +1,6 @@
 #ifndef __OCEAN__
 #define __OCEAN__
 
-
 #include "control_fields.gdshaderinc"
 #include "tiling_and_blending.gdshaderinc"
 #include "visual_effects.gdshaderinc"
@@ -16,17 +15,26 @@ uniform sampler2D exemplar : filter_linear_mipmap_anisotropic;
 uniform sampler2D profile_map : filter_linear_mipmap_anisotropic, repeat_disable;
 uniform bool shallow_water = true;
 
+// Security
+void clean_queries (inout wave_train_query queries[WAVE_TRAINS_COUNT]) {
+	for (int i = 0; i < WAVE_TRAINS_COUNT; i++) {
+		queries[i].wavelength = max(0.01, queries[i].wavelength);
+		queries[i].orientation = clamp(queries[i].orientation, -2.0 * PI, 2.0 * PI);
+		queries[i].profile = clamp(queries[i].profile, 0.0, 1.0);
+	}
+}
+
 // Composition between the profile map and the gaussian field, Equation 5
 float H(vec2 G) {
 	return texture(profile_map, (G * 0.5 + 0.5)).r;
 }
 
-
-const vec3 var[4] = {
-	vec3(0), vec3(0),
-	vec3(0), vec3(0.2, 0.05, 0.0)
-};
+// Section 8.3 BRDF
 vec3 get_sigma(FP P, float frequency, float profile) {
+	vec3 var[4] = {
+		vec3(0), vec3(0),
+		vec3(0), vec3(0.2, 0.05, 0.0)
+	};
 	float max_p = max(length(P.dx), length(P.dy));
 	float x = clamp(max_p * frequency, 0.0, 1.0);
 	float y = clamp(profile, 0.0, 1.0);
@@ -35,7 +43,7 @@ vec3 get_sigma(FP P, float frequency, float profile) {
 	return (b - a) * y + a;
 }
 
-
+// Equation 9
 vec2 synthesize_gaussian_field(FP P, wave_train_query query, int wave_id, float t) {
 	TB_grid_data tb_grid_data = TB_get_grid_data(P.uv, (1.0 / query.wavelength));
 	
@@ -69,10 +77,12 @@ void OceanFragment(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], o
 	effects.sss = 0.0;
 	effects.foam = 0.0;
 	
+	clean_queries(queries);
+	
 	// The sum in Equation 4
 	for (int i = 0; i < queries.length(); i++) {
 		wave_train_query query = queries[i];
-		if (query.profile == 0.0) continue;
+		if (query.profile <= 0.0) continue;
 		
 		// Equation 9
 		vec2 G_l_raw = synthesize_gaussian_field(P, query, i, t);
@@ -108,10 +118,12 @@ void OceanFragment(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], o
 void OceanVertex(FP P, float t, wave_train_query queries[WAVE_TRAINS_COUNT], out vec3 displacement) {
 	displacement = vec3(0.0);
 	
+	clean_queries(queries);
+	
 	// The sum in Equation 4
 	for (int i = 0; i < queries.length(); i++) {
 		wave_train_query query = queries[i];
-		if (query.profile == 0.0) continue;
+		if (query.profile <= 0.0) continue;
 		
 		// Equation 9
 		vec2 G_l_raw = synthesize_gaussian_field(P, query, i, t);
