@@ -18,19 +18,30 @@ struct control_fields {
 
 
 
-//DEEP
+//DEEP (Section 6)
 
 float speed_deep(float wavelength) {
-	return sqrt((wavelength * g) / (2.0 * PI));
+	return sqrt((wavelength * g) / (2.0 * PI)); // Equation 15
 }
 
 float frequency_deep(float wavelength) {
-	return 1.0 / wavelength;
+	return 1.0 / wavelength; // Equation 14
+}
+
+control_fields deep_water_control_fields(vec2 u, wave_train_query query) {
+	control_fields deep;
+	
+	deep.speed = speed_deep(query.wavelength); // Equation 15
+	deep.orientation = query.orientation;
+	deep.frequency = frequency_deep(query.wavelength); // Equation 14
+	deep.profile = query.profile;
+	
+	return deep;
 }
 
 
 
-//SHALLOW
+//SHALLOW (Section 7)
 
 uniform sampler2D depth_map : repeat_disable;
 
@@ -70,29 +81,25 @@ float profile_shallow(float depth, float wavelength, float profile_deep) {
 	return sqrt(sqrt((wavelength * 0.5)/depth)) * profile_deep;
 }
 
-
-
-control_fields sample_control_fields(vec2 u, wave_train_query query, int wave_id, float t, bool shallow_water) {
-	control_fields deep;
-	
-	deep.speed = speed_deep(query.wavelength);
-	deep.orientation = query.orientation;
-	deep.frequency = frequency_deep(query.wavelength);
-	deep.profile = query.profile;
-	
-	if (!shallow_water) return deep;
-	
+control_fields shallow_water_control_fields(vec2 u, wave_train_query query, int wave_id) {
+	control_fields deep = deep_water_control_fields(u, query);
+	float _depth = depth(u); // p(u) in equation 16 and 19
+	float _depth_gradient = depth_gradient(_depth, u);
 	
 	control_fields shallow;
-	
-	float _depth = depth(u);
-	float _depth_gradient = depth_gradient(_depth, u);
-	shallow.speed = speed_shallow(_depth, query.wavelength);
-	shallow.orientation = orientation_shallow(deep.orientation, _depth_gradient, deep.speed, shallow.speed);
-	shallow.frequency = frequency_shallow(deep.speed, shallow.speed, deep.frequency);
-	shallow.profile = profile_shallow(_depth, query.wavelength, deep.profile);
+	shallow.speed = speed_shallow(_depth, query.wavelength); // Equation 16
+	shallow.orientation = orientation_shallow(deep.orientation, _depth_gradient, deep.speed, shallow.speed); // Equation 17
+	shallow.frequency = frequency_shallow(deep.speed, shallow.speed, deep.frequency); // Equation 18
+	shallow.profile = profile_shallow(_depth, query.wavelength, deep.profile); // Equation 19
 	
 	return shallow;
 }
+
+
+control_fields sample_control_fields(vec2 u, wave_train_query query, int wave_id, bool shallow_water) {
+	if (!shallow_water) return deep_water_control_fields(u, query);
+	return shallow_water_control_fields(u, query, wave_id);
+}
+
 
 #endif

@@ -44,10 +44,6 @@ void vertex() {
 	vec3 displacement;
 	OceanVertex(P, TIME, queries, displacement);
 	
-	if (VERTEX.y < 0.0) displacement.y *= 0.0;
-	if (VERTEX.x != clamp(VERTEX.x, -127, 127)) displacement.x *= 0.0;
-	if (VERTEX.z != clamp(VERTEX.z, -127, 127)) displacement.z *= 0.0;
-	
 	VERTEX += displacement;
 }
 
@@ -70,9 +66,7 @@ void fragment() {
 	OceanFragment(P, TIME, queries, O, sigma, effects, slope);
 	
 	//Sets the normal
-	if ((INV_VIEW_MATRIX * vec4(NORMAL, 0.0)).y > 0.5) {
-		NORMAL = (VIEW_MATRIX * vec4(normalize(vec3(slope.x, 1.0, -slope.y)), 0)).xyz;
-	}
+	NORMAL = (VIEW_MATRIX * vec4(normalize(vec3(slope.x, 1.0, -slope.y)), 0)).xyz;
 	
 	// Water BRDF params
 	float water_alpha = clamp(1.0 - exp(-distance(world_position, sea_position) * 0.3), 0.0, 1.0);

@@ -50,8 +50,8 @@ shader_parameter/orientations = PackedFloat32Array(1.5, 1.5, 1.5, 1.5, 3.142)
 shader_parameter/profiles = PackedFloat32Array(0.01, 0.01, 0.01, 0.01, 0.7)
 shader_parameter/wind_strength = SubResource("NoiseTexture2D_272ya")
 
-[sub_resource type="BoxMesh" id="BoxMesh_csr0l"]
-size = Vector3(256, 15, 256)
+[sub_resource type="PlaneMesh" id="PlaneMesh_amerp"]
+size = Vector2(256, 256)
 subdivide_width = 256
 subdivide_depth = 256
 
@@ -78,7 +78,7 @@ transform = Transform3D(0.997506, 0, 0, 0, 0.997506, 0, 0, 0, 0.997506, 0, -7, 0
 material_override = SubResource("ShaderMaterial_4231v")
 cast_shadow = 2
 ignore_occlusion_culling = true
-mesh = SubResource("BoxMesh_csr0l")
+mesh = SubResource("PlaneMesh_amerp")
 
 [node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=1821912561]
 environment = SubResource("Environment_novmw")

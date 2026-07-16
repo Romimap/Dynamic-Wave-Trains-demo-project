@@ -34,8 +34,8 @@ shader_parameter/wavelengths = PackedFloat32Array(15, 0, 3, 0.7, 0.2)
 shader_parameter/orientations = PackedFloat32Array(0.775, 0, 0.485, 0.485, 0.485)
 shader_parameter/profiles = PackedFloat32Array(0.31, 0, 0.1, 0.3, 0.4)
 
-[sub_resource type="BoxMesh" id="BoxMesh_csr0l"]
-size = Vector3(256, 40, 256)
+[sub_resource type="PlaneMesh" id="PlaneMesh_yg147"]
+size = Vector2(256, 256)
 subdivide_width = 256
 subdivide_depth = 256
 
@@ -65,7 +65,7 @@ transform = Transform3D(0.997506, 0, 0, 0, 0.997506, 0, 0, 0, 0.997506, 0, -18.5
 material_override = SubResource("ShaderMaterial_4231v")
 cast_shadow = 2
 ignore_occlusion_culling = true
-mesh = SubResource("BoxMesh_csr0l")
+mesh = SubResource("PlaneMesh_yg147")
 
 [node name="Cliff" type="MeshInstance3D" parent="." unique_id=653405169]
 transform = Transform3D(-4.3602377e-08, 0, -0.99750614, 0, 0.99750614, 0, 0.99750614, 0, -4.3602377e-08, 120, -7, 0)

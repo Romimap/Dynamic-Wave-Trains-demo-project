@@ -36,8 +36,8 @@ shader_parameter/wavelengths = PackedFloat32Array(15, 8, 3, 0.7, 0.2)
 shader_parameter/orientations = PackedFloat32Array(1.5, 1.5, 1.5, 1.5, 1.5)
 shader_parameter/profiles = PackedFloat32Array(0.2, 0.15, 0.1, 0.3, 0.4)
 
-[sub_resource type="BoxMesh" id="BoxMesh_csr0l"]
-size = Vector3(256, 15, 256)
+[sub_resource type="PlaneMesh" id="PlaneMesh_dymhm"]
+size = Vector2(256, 256)
 subdivide_width = 256
 subdivide_depth = 256
 
@@ -115,11 +115,11 @@ adjustment_saturation = 1.2
 script = SubResource("GDScript_4msxo")
 
 [node name="Ocean" type="MeshInstance3D" parent="." unique_id=1360664869]
-transform = Transform3D(0.997506, 0, 0, 0, 0.997506, 0, 0, 0, 0.997506, 0, -7, 0)
+transform = Transform3D(0.997506, 0, 0, 0, 0.997506, 0, 0, 0, 0.997506, 0, 0.5864868, 0)
 material_override = SubResource("ShaderMaterial_4231v")
 cast_shadow = 2
 ignore_occlusion_culling = true
-mesh = SubResource("BoxMesh_csr0l")
+mesh = SubResource("PlaneMesh_dymhm")
 
 [node name="Ground" type="MeshInstance3D" parent="." unique_id=1420937041]
 transform = Transform3D(1, 2.72027e-06, 0.000830562, -8.78748e-06, 3, 0.000803316, -0.000830561, -0.000267775, 1, 0, 0, 0)
