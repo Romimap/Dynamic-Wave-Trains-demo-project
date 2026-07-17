@@ -15,7 +15,7 @@ uniform sampler2D exemplar : filter_linear_mipmap_anisotropic;
 uniform sampler2D profile_map : filter_linear_mipmap_anisotropic, repeat_disable;
 uniform bool shallow_water = true;
 
-// Security
+// Ensure the input values are in adequate range
 void clean_queries (inout wave_train_query queries[WAVE_TRAINS_COUNT]) {
 	for (int i = 0; i < WAVE_TRAINS_COUNT; i++) {
 		queries[i].wavelength = max(0.01, queries[i].wavelength);
