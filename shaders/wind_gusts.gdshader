@@ -36,4 +36,4 @@ wave_train_query[WAVE_TRAINS_COUNT] generate_queries(vec2 uv, float time) {
 }
 
 #define CUSTOM_QUERIES
-#include "includes/render_ocean.gdshaderinc"
+#include "render_ocean.gdshaderinc"

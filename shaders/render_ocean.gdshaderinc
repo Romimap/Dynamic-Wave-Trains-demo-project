@@ -7,7 +7,7 @@ Using #defines, the user can individually replace the default generate_queries f
 
 #ifndef __RENDER_OCEAN__
 #define __RENDER_OCEAN__
-#include "ocean.gdshaderinc"
+#include "includes/ocean.gdshaderinc"
 
 #ifndef CUSTOM_RENDER_MODE
 render_mode depth_draw_always;
