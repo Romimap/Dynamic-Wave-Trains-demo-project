@@ -9,8 +9,7 @@ struct visual_effects {
 // This selects the top of the wave.
 // Mask is stronger if profile is high, and wavelength is long (pointy big waves > small round waves)
 // Section 9.1 : Subsurface scattering
-float sss(vec2 G, float wavelength)
-{
+float sss(vec2 G, float wavelength) {
 	float phi = mod(atan(G.y, G.x), 2.0 * PI) - PI;
 	phi = abs(phi) / PI;
 	phi *= length(G);
