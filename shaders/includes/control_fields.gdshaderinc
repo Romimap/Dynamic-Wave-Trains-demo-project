@@ -101,8 +101,8 @@ control_fields shallow_water_control_fields(vec2 u, wave_train_query query, int 
 
 
 control_fields sample_control_fields(vec2 u, wave_train_query query, int wave_id, bool shallow_water) {
-	if (!shallow_water) return deep_water_control_fields(u, query);
-	return shallow_water_control_fields(u, query, wave_id);
+	if (shallow_water) return shallow_water_control_fields(u, query, wave_id);
+	return deep_water_control_fields(u, query);
 }
 
 
